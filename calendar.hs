@@ -26,16 +26,13 @@ doCommand input ioEvents = do
                     putStrLn "ok"
                     loop $ return (addEvent (getEventInformation (words input)) events) 
         "TELL"  -> do   
-                    putStrLn "TELL"
-                    putStrLn $ printEvents events 
+                    putStrLn $ printByEvent ((words input)!!3) events 
                     loop $ return events 
         "DATE"  -> do
-                    putStrLn "DATE"
-                    putStrLn $ printEvents events  
+                    putStrLn $ printByDate (deleteQuatations ((words input)!!3)) events 
                     loop $ return events       
         "PLACE" -> do
-                    putStrLn "PLACE"
-                    putStrLn $ printEvents events 
+                    putStrLn $ printByPlace (deleteQuatations ((words input)!!3)) events 
                     loop $ return events        
         "ERROR" -> do
                     putStrLn "I do not understand that. I understand the following:\n\
@@ -57,9 +54,6 @@ checkInput input =
                     else "ERROR"
         _ -> "ERROR"      
 
---SEMMONEN TARKISTUS VOIS OLLA, ETTÄ KOKO RIMPSU switch caseen, JOSSA
---KATOTTAIS TRUE FALSE FUNKTIOIDEN KANSSA LÄPI MINKÄLAINEN SYÖTE ON KYSEESSÄ
-
 checkEvent :: [String] -> String
 checkEvent input = if input!!2 == "happens" && input!!3 == "at" && input!!5 == "on" && length input == 7 
                then "ADD" 
@@ -80,15 +74,23 @@ checkPlaceQuery input = if input!!1 == "happens" && input!!2 == "at" && length i
               then "PLACE" 
               else "ERROR"
 
-printEvents :: [EventInfo] -> String
-printEvents [] = "tyhjä"
-printEvents (eventInfo:xs) = show eventInfo  
+printByEvent :: String -> [EventInfo] -> String
+printByEvent event [] = "I do not know of such event"
+printByEvent event (eventInfo:xs) = if (name eventInfo) == event then show eventInfo else printByEvent event xs    
+
+printByDate :: String -> [EventInfo] -> String
+printByDate dateInput [] = "Nothing that I know of"
+printByDate dateInput (eventInfo:xs) = if show (date eventInfo) == dateInput then show eventInfo else printByDate dateInput xs   
+
+printByPlace :: String -> [EventInfo] -> String
+printByPlace placeInput [] = "Nothing that I know of"
+printByPlace placeInput (eventInfo:xs) = if (place eventInfo) == placeInput then show eventInfo else printByPlace placeInput xs   
 
 getEventInformation :: [String] -> [String] 
 getEventInformation input = [input!!1] ++ [input!!4] ++ [input!!6]   
 
 addEvent :: [String] -> [EventInfo] -> [EventInfo]
-addEvent [name, place, date] events = events ++ [EventInfo name place (getDate (deleteQuatations date))] --(makeDate 2019 10 08)]  
+addEvent [name, place, date] events = events ++ [EventInfo (deleteQuatations name) (deleteQuatations place) (getDate (deleteQuatations date))] --(makeDate 2019 10 08)]  
 
 deleteQuatations :: String -> String
 deleteQuatations s = init(tail s) 
@@ -96,3 +98,9 @@ deleteQuatations s = init(tail s)
 --'2019-10-08'
 getDate :: String -> Date
 getDate date = makeDate (read(take 4 date)::Integer) (read(take 2(drop 5 date))::Integer) (read(drop 8 date)::Integer)  
+
+{-- 
+TEST DATA
+eventit = (addEvent (getEventInformation (words "Event 'jesse' happens at 'vastis' on '2020-12-09'"))(addEvent(getEventInformation (words "Event 'jesse' happens at 'vastis' on '2030-01-02'")) []))
+
+--}

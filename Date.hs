@@ -19,6 +19,9 @@ toMonth x
 fromMonth :: Month -> Integer
 fromMonth (MakeMonth i) = i -- Pattern match i out 
 
+fromMonthToString :: Month -> String
+fromMonthToString (MakeMonth i) = if i < 10 then "0" ++ show i else show i  
+
 -- I do not define abs or signum. It seems to go through.
 -- I only allow positive values so they are not relevant.
 
@@ -71,7 +74,6 @@ instance Num Year where
 
 -}
 
-
 -- This does not take care of year 0 ie it allows it
 
 newtype Year = MakeYear Integer deriving (Eq, Show, Ord, Read)
@@ -84,9 +86,12 @@ toYear x
 fromYear :: Year -> Integer
 fromYear (MakeYear x) = x
 
+fromDayToString :: Day -> String
+fromDayToString (MakeDay i) = if i < 10 then "0" ++ show i else show i  
+
 data Date = Date { year :: Year, month :: Month, day :: Day } deriving (Eq, Ord)
 instance Show Date where
-  show (Date year month day) = "'" ++ show (fromYear year) ++ "-" ++  show (fromMonth month) ++ "-" ++ show (fromDay day) ++ "'" 
+  show (Date year month day) = show (fromYear year) ++ "-" ++  (fromMonthToString month) ++ "-" ++ (fromDayToString day) 
 
 getYear :: Date -> Integer
 getYear (Date year month day) = fromYear year

@@ -21,18 +21,19 @@ loop ioEvents =
 doCommand :: String -> IO [EventInfo] -> IO ()
 doCommand input ioEvents = do
   events <- ioEvents --Now you can use events as [EventInfo]
-  case checkInput (words input) of
+  putStrLn (show events)
+  case checkInput (split input) of
         "ADD"   -> do
                     putStrLn "ok"
-                    loop $ return (addEvent (getEventInformation (words input)) events) 
+                    loop $ return (addEvent (getEventInformation (split input)) events) 
         "TELL"  -> do   
-                    putStrLn $ printByEvent ((words input)!!3) events 
+                    putStrLn $ printByEvent ((split input)!!1) events 
                     loop $ return events 
         "DATE"  -> do
-                    putStrLn $ printByDate (deleteQuatations ((words input)!!3)) events 
+                    putStrLn $ printByDate ((split input)!!1) events 
                     loop $ return events       
         "PLACE" -> do
-                    putStrLn $ printByPlace (deleteQuatations ((words input)!!3)) events 
+                    putStrLn $ printByPlace ((split input)!!1) events 
                     loop $ return events        
         "ERROR" -> do
                     putStrLn "I do not understand that. I understand the following:\n\
@@ -44,33 +45,36 @@ doCommand input ioEvents = do
                     loop $ return events 
 
 checkInput :: [String] -> String
+checkInput [] = "ERROR"
 checkInput input = 
     case input!!0 of
         "Event" -> checkEvent input
-        "Tell" -> checkEventNameQuery input
-        "What" -> if checkDateQuery input == "DATE" then "DATE" 
-                  else 
-                    if checkPlaceQuery input == "PLACE" then "PLACE" 
-                    else "ERROR"
+        "Tell me about" -> checkEventNameQuery input
+        "What happens at" -> if length input == 2 then "PLACE" else "ERROR" 
+        "What happens on" -> if length input == 2 then "DATE" else "ERROR"
         _ -> "ERROR"      
 
+--Input example: ["Event", "sika pailut", "happens at",  "vastiksen terangi", "on", "2020-10-10"] 
 checkEvent :: [String] -> String
-checkEvent input = if input!!2 == "happens" && input!!3 == "at" && input!!5 == "on" && length input == 7 
+checkEvent input = if input!!2 == "happens at" && input!!4 == "on" && length input == 6
                then "ADD" 
                else "ERROR"   
 
+--Input example: ["Tell me about", "sika pailut"]
 checkEventNameQuery :: [String] -> String
-checkEventNameQuery input = if input!!1 == "me" && input!!2 == "about" && length input == 4 
+checkEventNameQuery input = if input!!0 == "Tell me about" && length input == 2 
                then "TELL"
                else "ERROR"
 
+--Input example: ["What happens on", "2020-10-10"]
 checkDateQuery :: [String] -> String
-checkDateQuery input = if input!!1 == "happens" && input!!2 == "on" && length input == 4 
+checkDateQuery input = if input!!0 == "What happens on" && length input == 2
               then "DATE" 
               else "ERROR"
 
+--Input example: ["What happens at", "vastiksen terangi"]
 checkPlaceQuery :: [String] -> String
-checkPlaceQuery input = if input!!1 == "happens" && input!!2 == "at" && length input == 4 
+checkPlaceQuery input = if input!!0 == "What happens at" && length input == 2 
               then "PLACE" 
               else "ERROR"
 
@@ -86,11 +90,12 @@ printByPlace :: String -> [EventInfo] -> String
 printByPlace placeInput [] = "Nothing that I know of"
 printByPlace placeInput (eventInfo:xs) = if (place eventInfo) == placeInput then show eventInfo else printByPlace placeInput xs   
 
+--Example: ["Event","jesse","happens at","vastis","on","2020-12-09"]
 getEventInformation :: [String] -> [String] 
-getEventInformation input = [input!!1] ++ [input!!4] ++ [input!!6]   
+getEventInformation input = [input!!1] ++ [input!!3] ++ [input!!5]   
 
 addEvent :: [String] -> [EventInfo] -> [EventInfo]
-addEvent [name, place, date] events = events ++ [EventInfo (deleteQuatations name) (deleteQuatations place) (getDate (deleteQuatations date))] --(makeDate 2019 10 08)]  
+addEvent [name, place, date] events = events ++ [EventInfo name place (getDate date)] 
 
 deleteQuatations :: String -> String
 deleteQuatations s = init(tail s) 
@@ -99,8 +104,20 @@ deleteQuatations s = init(tail s)
 getDate :: String -> Date
 getDate date = makeDate (read(take 4 date)::Integer) (read(take 2(drop 5 date))::Integer) (read(drop 8 date)::Integer)  
 
+split :: String -> [String]
+split "" = []
+split xs = case break (=='\'') xs of 
+  (ls, "") -> [ls]
+  (ls, x:rs) -> trimString ls : split rs
+
+trimString :: String -> String
+trimString s = if (head s) == ' ' then
+                  trimString (tail s)
+                else
+                  if last s == ' ' then trimString (init s)  
+                  else s
+
 {-- 
 TEST DATA
-eventit = (addEvent (getEventInformation (words "Event 'jesse' happens at 'vastis' on '2020-12-09'"))(addEvent(getEventInformation (words "Event 'jesse' happens at 'vastis' on '2030-01-02'")) []))
-
+eventit = (addEvent (getEventInformation (split "Event 'jesse' happens at 'vastis' on '2020-12-09'"))(addEvent(getEventInformation (split "Event 'jesse' happens at 'vastis' on '2030-01-02'")) []))
 --}
